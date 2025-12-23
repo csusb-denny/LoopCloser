@@ -8,17 +8,24 @@ function App() {
   const [duration, setDuration] = useState("")
   const [isActive, setIsActive] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
 
   // Countdown timer logic
   useEffect(() => {
-    if (!isActive || timeLeft <= 0) return
+    if (!isActive || isPaused || timeLeft <= 0) return
 
     const interval = setInterval(() => {
       setTimeLeft((prev) => prev - 1)
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [isActive, timeLeft])
+  }, [isActive, isPaused ,timeLeft])
+
+  useEffect(() => {
+    if (isActive && timeLeft === 0) {
+      handleEnd()
+    }
+  }, [timeLeft, isActive])
 
   const handleStart = () => {
     if (!goal || !duration) return
@@ -97,6 +104,12 @@ function App() {
             <p className="text-4xl font-mono mt-4">
               {formatTime(timeLeft)}
             </p>
+            <button
+              onClick={() => setIsPaused((prev) => !prev)}
+              className="w-1/3 min-w-[220px] py-3 rounded-md bg-gray-800 text-white font-semibold hover:bg-gray-700 transition"
+            >
+              {isPaused ? "Resume" : "Pause"}
+            </button>
 
             <button
               onClick={handleEnd}

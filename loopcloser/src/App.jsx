@@ -1,64 +1,131 @@
-import { useEffect, useState, useRef } from "react";
-import Timer from "./components/Timer";
+import Timer from "./components/Timer"
+import Stats from "./components/Stats"
+import SessionHistory from "./components/SessionHistory"
+import ActivityGrid from "./components/ActivityGrid"
+import { useSessions } from "./hooks/useSessions"
 
 export default function App() {
-  const [sessions, setSessions] = useState([]);
-  const isInitialLoad = useRef(true);
-
-  // Load from localStorage ONCE
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("sessions");
-      if (stored) {
-        setSessions(JSON.parse(stored));
-      }
-    } catch (err) {
-      console.error("Failed to load sessions", err);
-    }
-  }, []);
-
-  // Save only AFTER initial load
-  useEffect(() => {
-    if (isInitialLoad.current) {
-      isInitialLoad.current = false;
-      return;
-    }
-    localStorage.setItem("sessions", JSON.stringify(sessions));
-  }, [sessions]);
-
-  const addSession = (session) => {
-    setSessions((prev) => [session, ...prev]);
-  };
+  const {
+    sessions,
+    addSession,
+    deleteSession,
+    dailyStats,
+    totalTime
+  } = useSessions()
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10">
-      <h1 className="text-4xl font-bold mb-2">LoopCloser</h1>
-      <p className="text-gray-600 mb-6">Focus. Track. Improve.</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex justify-center py-12 px-4">
+      {/* SINGLE CONSTRAINED COLUMN */}
+      <div className="w-full max-w-md space-y-10">
 
-      <Timer onComplete={addSession} />
+        {/* HEADER */}
+        <header className="text-center">
+          <h1 className="text-5xl font-bold text-gray-800">
+            LoopCloser
+          </h1>
+          <p className="text-gray-600 mt-2 text-lg">
+            Focus. Track. Improve.
+          </p>
+        </header>
 
-      <div className="mt-10 w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-3">Session History</h2>
+        {/* NEW SESSION */}
+        <Timer onComplete={addSession} />
 
-        {sessions.length === 0 ? (
-          <p className="text-gray-500">No sessions yet.</p>
-        ) : (
-          <ul className="space-y-3">
-            {sessions.map((s) => (
-              <li key={s.id} className="bg-white p-4 rounded shadow">
-                <div className="font-semibold">{s.title}</div>
-                <div className="text-sm text-gray-600">{s.date}</div>
-                <div className="text-sm mt-1">
-                  Duration: {s.duration}s
+        {/* STATS */}
+        {sessions.length > 0 && (
+          <div className="bg-white p-4 rounded-xl shadow-md">
+            <div className="flex justify-between items-center">
+              <div className="text-center flex-1">
+                <div className="text-2xl font-bold text-blue-600">
+                  {sessions.length}
                 </div>
-                {s.notes && (
-                  <div className="text-sm italic mt-1">{s.notes}</div>
-                )}
-              </li>
-            ))}
-          </ul>
+                <div className="text-sm text-gray-600">
+                  Total Sessions
+                </div>
+              </div>
+              <div className="text-center flex-1 border-l">
+                <div className="text-2xl font-bold text-green-600">
+                  {formatDuration(totalTime)}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Total Time
+                </div>
+              </div>
+            </div>
+          </div>
         )}
+
+        {/* SESSION HISTORY */}
+        <section className="bg-white p-6 rounded-xl shadow-md space-y-4">
+          <h2 className="text-xl font-semibold text-gray-800">
+            Session History
+          </h2>
+
+          {sessions.length === 0 ? (
+            <p className="text-gray-500 text-center">
+              No sessions yet. Start your first session above!
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {sessions.map((s) => (
+                <li
+                  key={s.id}
+                  className="border rounded-lg p-4 flex justify-between items-start"
+                >
+                  <div>
+                    <div className="font-semibold text-gray-800">
+                      {s.title}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {s.dateDisplay}
+                    </div>
+                    <div className="text-sm text-blue-600 mt-1">
+                      Duration: {formatDuration(s.duration)}
+                    </div>
+                    {s.notes && (
+                      <div className="text-sm italic text-gray-600 mt-2">
+                        {s.notes}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => deleteSession(s.id)}
+                    className="text-red-500 hover:text-red-700 font-bold text-xl"
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* ACTIVITY OVERVIEW */}
+        <section className="bg-white p-6 rounded-xl shadow-md space-y-4">
+          <h2 className="text-xl font-semibold text-gray-800">
+            Activity Overview
+          </h2>
+
+          {Object.keys(dailyStats).length === 0 ? (
+            <p className="text-gray-500 text-center">
+              No activity yet.
+            </p>
+          ) : (
+            <div className="grid grid-cols-7 gap-2">
+              {Object.entries(dailyStats).map(([date, count]) => (
+                <div
+                  key={date}
+                  title={`${count} session(s) on ${date}`}
+                  className="bg-green-500 text-white text-xs font-bold text-center rounded p-3"
+                >
+                  {count}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
       </div>
     </div>
-  );
+  )
 }
